@@ -2,8 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../controllers/menu_controller.dart'
-    as menu_ctrl; // Alias the MenuController import
+import '../controllers/menu_controller.dart' as menu_ctrl;
 import '../models/menu_item.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -12,18 +11,17 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
-  late final menu_ctrl.MenuController menuController; // Use the alias here
+  late final menu_ctrl.MenuController menuController;
   List<MenuItem> menuItems = [];
 
   @override
   void initState() {
     super.initState();
-    menuController = menu_ctrl.MenuController(
-        supabase: Supabase.instance.client); // Use the alias here
+    menuController =
+        menu_ctrl.MenuController(supabase: Supabase.instance.client);
     fetchMenuItems();
   }
 
-  // Fetch the list of menu items
   Future<void> fetchMenuItems() async {
     final items = await menuController.fetchMenuItems();
     setState(() {
@@ -31,7 +29,6 @@ class _MenuScreenState extends State<MenuScreen> {
     });
   }
 
-  // Show the add/edit dialog for menu items
   void showAddEditDialog({MenuItem? item}) {
     final nameController = TextEditingController(text: item?.name ?? '');
     final priceController =
@@ -112,40 +109,77 @@ class _MenuScreenState extends State<MenuScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Food Menu'),
+        backgroundColor: Colors.green,
         actions: [
           IconButton(
               icon: const Icon(Icons.refresh), onPressed: fetchMenuItems),
         ],
       ),
-      body: ListView.builder(
-        itemCount: menuItems.length,
-        itemBuilder: (context, index) {
-          final item = menuItems[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(item.name),
-              subtitle: Text(
-                  'Price: \$${item.price} | ${item.availability ? "Available" : "Unavailable"}'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () => showAddEditDialog(item: item)),
-                  IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => menuController.deleteMenuItem(item.id)),
-                ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: () => showAddEditDialog(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                minimumSize: const Size(double.infinity, 50),
               ),
+              child: const Text('Add New Item', style: TextStyle(fontSize: 18)),
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showAddEditDialog(),
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add),
+            const SizedBox(height: 16),
+            Expanded(
+              child: menuItems.isEmpty
+                  ? const Center(child: Text('No menu items available.'))
+                  : ListView.builder(
+                      itemCount: menuItems.length,
+                      itemBuilder: (context, index) {
+                        final item = menuItems[index];
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 2,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: item.availability
+                                  ? Colors.green
+                                  : Colors.grey,
+                              child: Text(
+                                item.name[0].toUpperCase(),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            title: Text(item.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            subtitle: Text(
+                                'Price: \$${item.price.toStringAsFixed(2)} | ${item.availability ? "Available" : "Unavailable"}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
+                                    onPressed: () =>
+                                        showAddEditDialog(item: item)),
+                                IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
+                                    onPressed: () async {
+                                      await menuController
+                                          .deleteMenuItem(item.id);
+                                      fetchMenuItems();
+                                    }),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
